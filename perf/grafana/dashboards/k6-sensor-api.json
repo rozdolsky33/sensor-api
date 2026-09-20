@@ -849,8 +849,11 @@
             "showPoints": "never",
             "stacking": {
               "mode": "none"
-            }
-          }
+            },
+            "axisSoftMin": 0,
+            "axisSoftMax": 0.05
+          },
+          "decimals": 1
         },
         "overrides": [
           {
