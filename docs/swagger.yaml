@@ -1,0 +1,385 @@
+basePath: /
+consumes:
+- application/json
+definitions:
+  httpapi.CreateSensorRequest:
+    properties:
+      location:
+        $ref: '#/definitions/httpapi.LocationRequest'
+      name:
+        example: roof-temp-01
+        type: string
+      tags:
+        example:
+        - temperature
+        - roof
+        items:
+          type: string
+        type: array
+    type: object
+  httpapi.ErrorBody:
+    properties:
+      code:
+        example: validation_failed
+        type: string
+      fields:
+        items:
+          $ref: '#/definitions/httpapi.FieldError'
+        type: array
+      message:
+        example: request is invalid
+        type: string
+    type: object
+  httpapi.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/httpapi.ErrorBody'
+    type: object
+  httpapi.FieldError:
+    properties:
+      field:
+        example: location.latitude
+        type: string
+      message:
+        example: must be between -90 and 90
+        type: string
+    type: object
+  httpapi.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  httpapi.LocationRequest:
+    properties:
+      latitude:
+        example: 51.5074
+        type: number
+      longitude:
+        example: -0.1278
+        type: number
+    type: object
+  httpapi.LocationResponse:
+    properties:
+      latitude:
+        example: 51.5074
+        type: number
+      longitude:
+        example: -0.1278
+        type: number
+    type: object
+  httpapi.NearestSensorResponse:
+    properties:
+      distance_meters:
+        example: 1234.5
+        type: number
+      sensor:
+        $ref: '#/definitions/httpapi.SensorResponse'
+    type: object
+  httpapi.PatchSensorRequest:
+    properties:
+      location:
+        $ref: '#/definitions/httpapi.LocationRequest'
+      tags:
+        example:
+        - temperature
+        - roof
+        items:
+          type: string
+        type: array
+    type: object
+  httpapi.ReplaceSensorRequest:
+    properties:
+      location:
+        $ref: '#/definitions/httpapi.LocationRequest'
+      tags:
+        example:
+        - temperature
+        - roof
+        items:
+          type: string
+        type: array
+    type: object
+  httpapi.SensorListResponse:
+    properties:
+      sensors:
+        items:
+          $ref: '#/definitions/httpapi.SensorResponse'
+        type: array
+    type: object
+  httpapi.SensorResponse:
+    properties:
+      created_at:
+        example: "2026-09-18T10:00:00Z"
+        type: string
+      location:
+        $ref: '#/definitions/httpapi.LocationResponse'
+      name:
+        example: roof-temp-01
+        type: string
+      tags:
+        example:
+        - temperature
+        - roof
+        items:
+          type: string
+        type: array
+      updated_at:
+        example: "2026-09-18T10:00:00Z"
+        type: string
+    type: object
+info:
+  contact: {}
+  description: 'JSON REST API for storing and querying sensor metadata: name, GPS
+    location and tags.'
+  title: Sensor Metadata API
+  version: "1.0"
+paths:
+  /healthz:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.HealthResponse'
+      summary: Liveness / readiness probe
+      tags:
+      - system
+  /readyz:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.HealthResponse'
+      summary: Liveness / readiness probe
+      tags:
+      - system
+  /v1/sensors:
+    get:
+      parameters:
+      - description: Only sensors carrying this tag
+        in: query
+        name: tag
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.SensorListResponse'
+      summary: List sensors
+      tags:
+      - sensors
+    post:
+      consumes:
+      - application/json
+      description: Registers a new sensor. The name is the immutable identifier and
+        must be unique.
+      parameters:
+      - description: Sensor to create
+        in: body
+        name: sensor
+        required: true
+        schema:
+          $ref: '#/definitions/httpapi.CreateSensorRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          headers:
+            Location:
+              description: URL of the created sensor
+              type: string
+          schema:
+            $ref: '#/definitions/httpapi.SensorResponse'
+        "400":
+          description: Validation failed or malformed JSON
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "409":
+          description: Name already exists
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "413":
+          description: Request Entity Too Large
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "415":
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Create a sensor
+      tags:
+      - sensors
+  /v1/sensors/{name}:
+    delete:
+      parameters:
+      - description: Sensor name
+        in: path
+        name: name
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Delete a sensor
+      tags:
+      - sensors
+    get:
+      parameters:
+      - description: Sensor name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.SensorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Get a sensor by name
+      tags:
+      - sensors
+    patch:
+      consumes:
+      - application/json
+      description: Updates only the fields present in the body. At least one field
+        is required.
+      parameters:
+      - description: Sensor name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Fields to change
+        in: body
+        name: sensor
+        required: true
+        schema:
+          $ref: '#/definitions/httpapi.PatchSensorRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.SensorResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "409":
+          description: Concurrent modification
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "415":
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Partially update a sensor
+      tags:
+      - sensors
+    put:
+      consumes:
+      - application/json
+      description: Full replacement of location and tags. Omitted tags are cleared.
+        The name cannot be changed.
+      parameters:
+      - description: Sensor name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: New metadata
+        in: body
+        name: sensor
+        required: true
+        schema:
+          $ref: '#/definitions/httpapi.ReplaceSensorRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.SensorResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "409":
+          description: Concurrent modification
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "415":
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Replace a sensor's metadata
+      tags:
+      - sensors
+  /v1/sensors/nearest:
+    get:
+      description: Returns the sensor closest to the given coordinate (great-circle
+        distance) and the distance in metres.
+      parameters:
+      - description: Latitude in decimal degrees
+        in: query
+        maximum: 90
+        minimum: -90
+        name: lat
+        required: true
+        type: number
+      - description: Longitude in decimal degrees
+        in: query
+        maximum: 180
+        minimum: -180
+        name: lon
+        required: true
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.NearestSensorResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+        "404":
+          description: No sensors stored
+          schema:
+            $ref: '#/definitions/httpapi.ErrorResponse'
+      summary: Find the nearest sensor
+      tags:
+      - sensors
+produces:
+- application/json
+swagger: "2.0"
