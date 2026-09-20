@@ -34,12 +34,12 @@ tidy:
 check: tidy lint test swagger-check
 
 # --- Performance testing (perf/) ---------------------------------------
-# API_PORT is the host port the API is published on; change it if 8080 is busy.
-PERF_COMPOSE := API_PORT=$(or $(API_PORT),8080) docker compose -f perf/docker-compose.yml
+# API_PORT is the host port the API is published on (18080 so it never clashes with `make run`).
+PERF_COMPOSE := API_PORT=$(or $(API_PORT),18080) docker compose -f perf/docker-compose.yml
 
 perf-up:     ## build the API image and start api + prometheus + grafana
 	$(PERF_COMPOSE) up -d --build
-	@echo "Grafana: http://localhost:3000   API: http://localhost:$(or $(API_PORT),8080)"
+	@echo "Grafana: http://localhost:3000   API: http://localhost:$(or $(API_PORT),18080)"
 
 perf-smoke:  ## 1 VU for 30s across every endpoint; verifies the stack is wired
 	$(PERF_COMPOSE) run --rm k6 run /scripts/smoke.js

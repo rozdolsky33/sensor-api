@@ -139,7 +139,8 @@ iteration: 60% `GET /v1/sensors/{name}`, 20% `GET /v1/sensors/nearest`,
 (`p95 < 50ms`, `p99 < 150ms`, error rate `< 1%`) make k6 exit non-zero on a
 regression, so the same script can gate CI later.
 
-If port 8080 is taken on your machine: `make perf-up API_PORT=18080`.
+The API under test is published on <http://localhost:18080> (not 8080, so it
+never clashes with `make run`); override with `make perf-up API_PORT=…`.
 
 ## Design
 

@@ -14,7 +14,7 @@ services:
     environment:
       LOG_LEVEL: warn            # keep the API from spending CPU on request logs
     ports:
-      - "${API_PORT:-8080}:8080"   # host port; override with API_PORT=... if 8080 is taken
+      - "${API_PORT:-18080}:8080"  # host port (18080 so it never clashes with `make run` on 8080)
     healthcheck:
       # distroless has no shell/curl; k6 checks readiness itself in setup()
       disable: true
