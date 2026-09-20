@@ -1,5 +1,7 @@
 # Sensor Metadata API
 
+[![CI](https://github.com/rozdolsky33/sensor-api/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rozdolsky33/sensor-api/actions/workflows/ci.yml)
+
 A JSON REST API, written in Go on the standard-library `net/http` router with
 no web framework; the only third-party runtime dependency is the Swagger UI
 handler. Stores and queries sensor metadata: a unique **name**, a GPS
