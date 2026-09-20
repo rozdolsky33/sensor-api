@@ -1,0 +1,63 @@
+# Local performance-testing stack: the API under test, a Prometheus that
+# receives k6 metrics over remote-write, and a Grafana with a provisioned
+# dashboard. k6 itself sits behind a profile so `up` does not start a test.
+#
+#   docker compose up -d                       # api + prometheus + grafana
+#   docker compose run --rm k6 run /scripts/load.js
+#   open http://localhost:3000
+name: sensor-api-perf
+
+services:
+  api:
+    build:
+      context: ..
+    environment:
+      LOG_LEVEL: warn            # keep the API from spending CPU on request logs
+    ports:
+      - "${API_PORT:-8080}:8080"   # host port; override with API_PORT=... if 8080 is taken
+    healthcheck:
+      # distroless has no shell/curl; k6 checks readiness itself in setup()
+      disable: true
+
+  prometheus:
+    image: prom/prometheus:v3.9.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-remote-write-receiver
+      - --enable-feature=native-histograms
+      - --storage.tsdb.retention.time=1d
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:12.4.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/k6-sensor-api.json
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  k6:
+    image: grafana/k6:1.5.0
+    profiles: [k6]
+    environment:
+      BASE_URL: http://api:8080
+      K6_PROMETHEUS_RW_SERVER_URL: http://prometheus:9090/api/v1/write
+      K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM: "true"
+      K6_PROMETHEUS_RW_PUSH_INTERVAL: 2s
+      K6_OUT: experimental-prometheus-rw
+    volumes:
+      - ./k6:/scripts:ro
+    depends_on:
+      - api
+      - prometheus

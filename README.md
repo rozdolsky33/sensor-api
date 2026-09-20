@@ -115,6 +115,32 @@ make check         # everything CI runs
 Requires Go 1.26 and [golangci-lint](https://golangci-lint.run) v2. `swag` is
 pinned as a `go tool` in `go.mod`, so no separate install is needed.
 
+## Performance testing
+
+`perf/` holds a self-contained load-testing stack: [k6](https://k6.io) drives
+the API, streams its metrics to Prometheus over remote-write, and a provisioned
+Grafana dashboard shows the run live. Nothing here touches the Go module.
+
+```bash
+make perf-up       # build the API image; start api + prometheus + grafana
+make perf-smoke    # 1 VU for 30s, every endpoint — proves the wiring
+make perf-test     # ramp 0 → 50 → 100 VUs over ~3.5 min
+make perf-down     # tear it all down
+```
+
+Open <http://localhost:3000> (no login) before running `perf-test`; the
+dashboard refreshes every 5s with requests/s, p50/p95/p99 latency, error rate,
+active VUs, and per-route breakdowns. Percentiles come from k6 native
+histograms, so they aggregate correctly across VUs rather than averaging p95s.
+
+`load.js` seeds 500 sensors, then each VU picks a weighted action per
+iteration: 60% `GET /v1/sensors/{name}`, 20% `GET /v1/sensors/nearest`,
+5% `GET /v1/sensors?tag=`, 15% a `POST → PATCH → DELETE` lifecycle. Thresholds
+(`p95 < 50ms`, `p99 < 150ms`, error rate `< 1%`) make k6 exit non-zero on a
+regression, so the same script can gate CI later.
+
+If port 8080 is taken on your machine: `make perf-up API_PORT=18080`.
+
 ## Design
 
 ```

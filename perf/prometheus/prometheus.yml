@@ -1,0 +1,4 @@
+# k6 pushes metrics in via remote-write; there is nothing to scrape.
+global:
+  scrape_interval: 15s
+scrape_configs: []
