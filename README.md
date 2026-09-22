@@ -175,6 +175,8 @@ internal/geo          haversine distance
 
 ## Future work
 
+Step-by-step implementation guides live in [`docs/roadmap/`](docs/roadmap/README.md).
+
 - Persistent backend (PostGIS) using the existing contract tests.
 - Pagination on `GET /v1/sensors`; k-nearest and `max_distance` on `nearest`.
 - Authentication, rate limiting, OpenTelemetry traces.
